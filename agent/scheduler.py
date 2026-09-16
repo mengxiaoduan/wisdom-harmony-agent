@@ -9,16 +9,21 @@ import time
 from pathlib import Path
 
 from . import config, content_engine, guardrails
+from .connectors.github_issues import GitHubIssues
 from .connectors.github_discussions import GitHubDiscussions
 
 OUTBOX = Path("outbox")
 
 
-def _conn() -> GitHubDiscussions:
+def _conn():
+    """按配置选择发布渠道：issues（默认，GITHUB_TOKEN 可用）或 discussions（需 PAT）。"""
     cfg = config.load_config()
     if not cfg["repo"]:
         raise RuntimeError("未配置仓库：请设置 WHA_REPO=owner/name 或写入 config.json 的 repo 字段。")
-    return GitHubDiscussions(config.load_token(), cfg["repo"], cfg["category"])
+    token = config.load_token()
+    if cfg.get("connector", "issues") == "discussions":
+        return GitHubDiscussions(token, cfg["repo"], cfg["category"])
+    return GitHubIssues(token, cfg["repo"], cfg.get("issue_label", "智和专栏"))
 
 
 def _save_draft(name: str, content: dict) -> Path:
@@ -28,11 +33,17 @@ def _save_draft(name: str, content: dict) -> Path:
     return path
 
 
+def default_topic_index() -> int:
+    """无状态主题轮换：按自然周推进，Actions 全新环境也能正确轮换。"""
+    weeks = int(time.time() // (7 * 86400))
+    return weeks % len(content_engine.load_topics())
+
+
 def step_post(auto_publish: bool = False) -> str:
     """生成并（可选）发布一篇帖子。返回动作说明。"""
     cfg = config.load_config()
     state = guardrails._load_state()
-    idx = int(state.get("topic_index", 0))
+    idx = int(state.get("topic_index", default_topic_index()))
     topic = content_engine.pick_topic(idx)
 
     post = content_engine.generate_post(topic, seed=idx)
@@ -78,16 +89,16 @@ def step_reply(auto_publish: bool = False) -> str:
             break
         r = content_engine.generate_reply(item["body"], seed=hash(item["comment_id"]) % 10**9)
         if auto_publish:
-            c = conn.publish_reply(item["discussion_number"], r["body"])
+            c = conn.publish_reply(item["post_number"], r["body"])
             limiter.record()
             replied_ids.add(item["comment_id"])
-            results.append("已回复 #%s 中 @%s：%s" % (item["discussion_number"], item["author"], c.get("url")))
+            results.append("已回复 #%s 中 @%s：%s" % (item["post_number"], item["author"], c.get("url")))
         else:
             item["draft_reply"] = r["body"]
             item["reply_kind"] = r["kind"]
-            _save_draft("reply-d%d-%s" % (item["discussion_number"], item["author"]), item)
+            _save_draft("reply-d%d-%s" % (item["post_number"], item["author"]), item)
             replied_ids.add(item["comment_id"])  # 草稿也不再重复生成
-            results.append("dry-run：已为 #%s 中 @%s 的留言生成草稿" % (item["discussion_number"], item["author"]))
+            results.append("dry-run：已为 #%s 中 @%s 的留言生成草稿" % (item["post_number"], item["author"]))
 
     s2 = guardrails._load_state()
     s2["replied_comment_ids"] = list(replied_ids)[-500:]  # 防无限增长

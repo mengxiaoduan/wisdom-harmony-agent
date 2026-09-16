@@ -8,7 +8,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULTS = {
     "repo": "",                      # 形如 "mengxiaoduan/wisdom-harmony-agent"
-    "category": "announcements",     # Discussions 分类 slug
+    "connector": "issues",           # issues（默认，GITHUB_TOKEN 可用）| discussions（需 PAT）
+    "category": "announcements",     # discussions 模式下的分类 slug
+    "issue_label": "智和专栏",        # issues 模式下的专栏标签
     "daily_post_limit": 1,
     "daily_reply_limit": 10,
     "dry_run_default": True,         # 默认先审后发
@@ -28,7 +30,9 @@ def load_config() -> dict:
 
     # 环境变量覆盖
     cfg["repo"] = os.environ.get("WHA_REPO", cfg["repo"])
+    cfg["connector"] = os.environ.get("WHA_CONNECTOR", cfg["connector"])
     cfg["category"] = os.environ.get("WHA_CATEGORY", cfg["category"])
+    cfg["issue_label"] = os.environ.get("WHA_ISSUE_LABEL", cfg["issue_label"])
     cfg["dry_run"] = os.environ.get("WHA_DRY_RUN", str(cfg["dry_run_default"]).lower()) in ("1", "true", "yes")
     if os.environ.get("WHA_DAILY_LIMIT"):
         cfg["daily_post_limit"] = int(os.environ["WHA_DAILY_LIMIT"])

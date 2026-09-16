@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: read
-  discussions: write
+  issues: write
 
 jobs:
   run-agent:
@@ -22,41 +22,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 发现 Discussions 分类 ID
-        id: cat
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python - <<'EOF'
-          import json, os, urllib.request
-          repo = os.environ["GITHUB_REPOSITORY"]
-          req = urllib.request.Request(
-              "https://api.github.com/repos/%s/discussions/categories" % repo,
-              headers={
-                  "Authorization": "Bearer %s" % os.environ["GITHUB_TOKEN"],
-                  "Accept": "application/vnd.github+json",
-                  "User-Agent": "wisdom-harmony-agent",
-              })
-          try:
-              with urllib.request.urlopen(req, timeout=30) as r:
-                  cats = json.loads(r.read().decode())
-          except Exception as e:
-              print("分类列表获取失败: %s" % e)
-              cats = []
-          pick = next((c for c in cats if c["slug"] == "announcements"),
-                      cats[0] if cats else None)
-          out = os.environ.get("GITHUB_OUTPUT", "")
-          with open(out, "a", encoding="utf-8") as f:
-              f.write("id=%s\n" % (pick["id"] if pick else ""))
-              f.write("total=%d\n" % len(cats))
-          print("选中分类:", pick["name"] if pick else "(无)", "id:", pick["id"] if pick else "-")
-          EOF
-
       - name: 运行智和 Agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WHA_REPO: ${{ github.repository }}
-          WHA_CATEGORY: announcements
-          WHA_CATEGORY_ID: ${{ steps.cat.outputs.id }}
-        run: |
-          python -m agent.main run --auto-post --auto-reply
+          WHA_CONNECTOR: issues
+          WHA_ISSUE_LABEL: 智和专栏
+        run: python -m agent.main run --auto-post --auto-reply

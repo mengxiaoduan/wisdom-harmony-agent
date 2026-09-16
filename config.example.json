@@ -1,5 +1,7 @@
 {
   "repo": "mengxiaoduan/wisdom-harmony-agent",
+  "connector": "issues",
+  "issue_label": "智和专栏",
   "category": "announcements",
   "daily_post_limit": 1,
   "daily_reply_limit": 10,

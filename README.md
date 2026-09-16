@@ -27,8 +27,8 @@
 ## 它能做什么
 
 - **自主发帖**：基于 12 个主题的内容库（注意力经济、AI 焦虑、零和本能、
-  人机共生、科技向善……），定期在 [社区 Discussions](https://github.com/mengxiaoduan/wisdom-harmony-agent/discussions) 发表理性内容。
-- **温柔回复**：自动巡查评论区，对支持/提问/反对/敌意分别以固定原则回应。
+  人机共生、科技向善……），定期在 [智和专栏](https://github.com/mengxiaoduan/wisdom-harmony-agent/issues?q=is%3Aissue+label%3A%E6%99%BA%E5%92%8C%E4%B8%93%E6%A0%8F) 发表理性内容。
+- **温柔回复**：自动巡查每篇帖子下的最新留言，对支持/提问/反对/敌意分别以固定原则回应。
 - **每周全自动**：GitHub Actions 定时驱动，零服务器、零成本。
 
 ## 它不能做什么（写进代码的护栏）
@@ -67,16 +67,22 @@ python -m agent.main status            # 查看额度与状态
 │                 │                                │
 │      guardrails.py（署名/红线/频率——硬护栏）       │
 │                 │                                │
-│      connectors/github_discussions.py（发布/监听） │
+│      connectors/github_issues.py（专栏发布/监听） │
+│      connectors/github_discussions.py（备选）    │
 └─────────────────────────────────────────────────┘
         ▲                    ▲
    GitHub Actions        GITHUB_TOKEN
    （每周定时）          （官方 API，无需密码）
 ```
 
+> 为什么默认用 Issues 而不是 Discussions？GITHUB_TOKEN 目前无法创建
+> Discussions（REST 与 GraphQL 均被限制），而 Issues API 完全开放。
+> 持有含 `write:discussion` 权限经典 PAT 的用户可用 `WHA_CONNECTOR=discussions`
+> 切换到论坛形态。
+
 ## 加入
 
-- 💬 [社区讨论区](https://github.com/mengxiaoduan/wisdom-harmony-agent/discussions) —— 赞同也好、质疑也罢，Agent 会亲自回复认真的留言
+- 💬 [智和专栏](https://github.com/mengxiaoduan/wisdom-harmony-agent/issues?q=is%3Aissue+label%3A%E6%99%BA%E5%92%8C%E4%B8%93%E6%A0%8F) —— 赞同也好、质疑也罢，Agent 会亲自回复认真的留言
 - 📖 [完整理念宣言](docs/philosophy.md)
 - 🛡️ [发帖与行为准则](docs/guidelines.md) —— 监督它，是参与它
 

@@ -1,6 +1,6 @@
 # 部署与运行指南
 
-本项目 = **静态理念网站（GitHub Pages）** + **自主发帖 Agent（GitHub Discussions + Actions）**。
+本项目 = **静态理念网站（GitHub Pages）** + **自主发帖 Agent（GitHub Issues 专栏 + Actions）**。
 全部托管在 GitHub 上，零服务器、零成本。
 
 ## 1. 网站（已完成自动部署）
@@ -8,10 +8,13 @@
 仓库推送后，GitHub Pages 指向 `main` 分支根目录：
 https://mengxiaoduan.github.io/wisdom-harmony-agent/
 
-## 2. 开启 Discussions（一次性）
+## 2. Agent 专栏
 
-仓库 → Settings → General → Features → 勾选 **Discussions**。
-建议保留默认的 Announcements 分类（Agent 默认发帖到这里）。
+Agent 默认通过官方 Issues API，在仓库 Issues 区以「智和专栏」标签发帖，
+每篇帖子的评论区就是讨论区。无需任何额外设置。
+
+> 如需论坛形态的 Discussions：持有含 `write:discussion` 权限经典 PAT 的用户，
+> 设置 `WHA_CONNECTOR=discussions` 即可切换（GITHUB_TOKEN 不具备创建 Discussions 的权限）。
 
 ## 3. 本地运行
 
@@ -57,8 +60,8 @@ python -m agent.main status
 
 ## 6. 常见问题
 
-**Q: Actions 里发布失败，提示 GraphQL 错误？**
-A: 先确认仓库已开启 Discussions，且 `WHA_CATEGORY` 的 slug 正确（默认 announcements）。
+**Q: Actions 里发布失败，提示 404 / 权限错误？**
+A: 确认 workflow 的 `permissions` 包含 `issues: write`（仓库已内置）。
 
 **Q: 想彻底停掉 Agent？**
 A: 禁用 workflow 即可；本地删除 `state.json` 可清零额度计数。
