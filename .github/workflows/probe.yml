@@ -1,0 +1,57 @@
+name: 端点诊断（可删除）
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  discussions: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 探测 Discussions API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'EOF'
+          import json, os, urllib.request, urllib.error
+          repo = os.environ["GITHUB_REPOSITORY"]
+          tok = os.environ["GITHUB_TOKEN"]
+          H = {"Authorization": "Bearer %s" % tok,
+               "Accept": "application/vnd.github+json",
+               "Content-Type": "application/json",
+               "User-Agent": "probe"}
+
+          def call(method, path, body=None):
+              data = json.dumps(body).encode() if body else None
+              req = urllib.request.Request("https://api.github.com" + path,
+                  data=data, method=method, headers=H)
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      return r.status, r.read().decode()[:220]
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read().decode()[:220]
+
+          print("== REST 探测 ==")
+          for m, p, b in [
+              ("GET",  "/repos/%s/discussions/categories" % repo, None),
+              ("GET",  "/repos/%s/discussion-categories" % repo, None),
+              ("GET",  "/repos/%s/discussions" % repo, None),
+              ("POST", "/repos/%s/discussions" % repo,
+               {"title": "probe", "body": "probe", "category_id": 1}),
+              ("GET",  "/repos/%s/discussions/1/comments" % repo, None),
+          ]:
+              print(m, p, "=>", call(m, p, b))
+
+          print("== GraphQL 探测 ==")
+          gq = lambda q, v={}: call("POST", "/graphql", {"query": q, "variables": v})
+          st, out = gq('query($o:String!,$n:String!){repository(owner:$o,name:$n){'
+                        'discussionCategories(first:5){nodes{id name slug}}}}',
+                        {"o": repo.split("/")[0], "n": repo.split("/")[1]})
+          print("查询分类 =>", st, out)
+          st, out = gq('mutation{addDiscussionPost(input:{repositoryId:"x",categoryId:"x",'
+                        'title:"x",body:"x"}){discussion{number}}}')
+          print("变更存在性 =>", st, out[:180])
+          EOF
