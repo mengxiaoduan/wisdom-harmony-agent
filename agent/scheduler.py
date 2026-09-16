@@ -54,6 +54,23 @@ def step_post(auto_publish: bool = False) -> str:
 
     if auto_publish:
         conn = _conn()
+        # 本周守卫：同一自然周内不重复发帖（防止手动触发造成刷屏）
+        try:
+            now = time.gmtime()
+            week_start = time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ",
+                time.gmtime(time.time() - (now.tm_wday * 86400 + now.tm_hour * 3600
+                                           + now.tm_min * 60 + now.tm_sec)))
+            for p in conn.list_posts(30):
+                if p.get("created_at", "") >= week_start:
+                    s2 = guardrails._load_state()
+                    s2["topic_index"] = idx + 1
+                    guardrails.save_state(s2)
+                    return "本周已有专栏帖子 #%s，跳过重复发布。" % p["number"]
+        except RuntimeError:
+            raise
+        except Exception:
+            pass  # 守卫生效失败不阻断发帖
         d = conn.publish_post(post["title"], post["body"])
         limiter.record()
         s2 = guardrails._load_state()

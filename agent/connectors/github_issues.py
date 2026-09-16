@@ -50,7 +50,11 @@ class GitHubIssues(Connector):
 
     def token_login(self) -> str:
         if self._login is None:
-            self._login = self._request("GET", "/user")["login"]
+            try:
+                self._login = self._request("GET", "/user")["login"]
+            except Exception:
+                # GITHUB_TOKEN 无权读 /user；Actions 中的发布身份固定为它
+                self._login = "github-actions[bot]"
         return self._login
 
     # ------------------------------------------------------------- 准备 --
