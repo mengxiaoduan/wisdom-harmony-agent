@@ -78,7 +78,7 @@ def step_reply(auto_publish: bool = False) -> str:
             break
         r = content_engine.generate_reply(item["body"], seed=hash(item["comment_id"]) % 10**9)
         if auto_publish:
-            c = conn.publish_reply(item["discussion_id"], r["body"])
+            c = conn.publish_reply(item["discussion_number"], r["body"])
             limiter.record()
             replied_ids.add(item["comment_id"])
             results.append("已回复 #%s 中 @%s：%s" % (item["discussion_number"], item["author"], c.get("url")))
