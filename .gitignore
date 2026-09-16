@@ -1,0 +1,6 @@
+state.json
+config.json
+outbox/
+__pycache__/
+*.pyc
+.tmp/

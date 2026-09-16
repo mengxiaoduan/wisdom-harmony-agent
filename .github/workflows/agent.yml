@@ -1,0 +1,30 @@
+name: 智和 Agent 定时运行
+
+# 每周自动发一篇理念帖，并巡查评论区回复一轮。
+# 首次使用请到 Actions 页面手动运行一次以授权（workflow_dispatch）。
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"   # 每周一 09:00 UTC（北京时间 17:00）
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  discussions: write
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 运行智和 Agent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WHA_REPO: ${{ github.repository }}
+          WHA_CATEGORY: announcements
+        run: python -m agent.main run --auto-post --auto-reply

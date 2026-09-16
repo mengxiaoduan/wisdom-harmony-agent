@@ -1,0 +1,9 @@
+{
+  "repo": "mengxiaoduan/wisdom-harmony-agent",
+  "category": "announcements",
+  "daily_post_limit": 1,
+  "daily_reply_limit": 10,
+  "dry_run_default": true,
+  "max_replies_per_comment": 1,
+  "language": "zh-CN"
+}
